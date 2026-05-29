@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Базука 3D - Полная игра с сохранением</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Arial', sans-serif;
+      background: #000;
+    }
+    
+    #disclaimer {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    #disclaimerBox {
+      background: #1a1a2e;
+      border: 2px solid #ff5500;
+      border-radius: 15px;
+      padding: 30px;
+      max-width: 500px;
+      text-align: center;
+      color: white;
+    }
+    #disclaimerBox h2 {
+      color: #ff5500;
+      margin-top: 0;
+    }
+    #disclaimerBox p {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #ccc;
+    }
+    
+    #mainMenu {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.9);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+    #mainMenu h1 {
+      color: #ff5500;
+      font-size: 48px;
+      margin-bottom: 10px;
+      text-shadow: 0 0 30px #ff5500;
+    }
+    #mainMenu .subtitle {
+      color: #aaa;
+      margin-bottom: 30px;
+      font-size: 16px;
+    }
+    .menuBtn {
+      background: #2a2a3e;
+      color: white;
+      border: 2px solid #ff5500;
+      padding: 15px 50px;
+      font-size: 20px;
+      border-radius: 30px;
+      cursor: pointer;
+      margin: 8px;
+      width: 250px;
+      transition: all 0.3s;
+    }
+    .menuBtn:hover {
+      background: #ff5500;
+      transform: scale(1.05);
+    }
+    .menuBtn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      border-color: #555;
+      color: #777;
+    }
+    .menuBtn:disabled:hover {
+      background: #2a2a3e;
+      transform: none;
+    }
+    
+    #menuToggleBtn {
+      position: absolute;
+      top: 10px;
+      right: 60px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      border: 1px solid #555;
+      padding: 6px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 14px;
+      z-index: 300;
+      display: none;
+    }
+    #menuToggleBtn:hover {
+      background: rgba(255,85,0,0.7);
+    }
+    
+    #pauseMenu {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 998;
+    }
+    #pauseMenu h2 {
+      color: #ff5500;
+      font-size: 36px;
+      margin-bottom: 20px;
+    }
+    
+    #saveMsg {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #0f0;
+      background: rgba(0,0,0,0.9);
+      padding: 15px 30px;
+      border-radius: 20px;
+      font-size: 20px;
+      z-index: 1001;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    
+    #info {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: white;
+      background: rgba(0,0,0,0.8);
+      padding: 8px 15px;
+      border-radius: 8px;
+      pointer-events: none;
+      font-size: 13px;
+      border-left: 3px solid #ff5500;
+    }
+    #crosshair {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 20px; height: 20px;
+      pointer-events: none;
+      z-index: 100;
+    }
+    .cross-dot {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 4px; height: 4px;
+      background: #ff5500;
+      border-radius: 50%;
+    }
+    .cross-h, .cross-v {
+      position: absolute;
+      background: #ff5500;
+    }
+    .cross-h { top: 50%; left: 0; width: 100%; height: 1px; transform: translateY(-50%); }
+    .cross-v { left: 50%; top: 0; height: 100%; width: 1px; transform: translateX(-50%); }
+    #ammo {
+      position: absolute;
+      bottom: 20px; right: 20px;
+      color: white;
+      background: rgba(0,0,0,0.8);
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      border: 1px solid #ff5500;
+    }
+    #ammo span { color: #ffaa00; }
+    #godMode, #territoryMode {
+      position: absolute;
+      right: 20px;
+      color: #0ff;
+      background: rgba(0,0,0,0.8);
+      padding: 6px 15px;
+      border-radius: 15px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    #godMode { top: 60px; border: 1px solid #0ff; text-shadow: 0 0 10px #0ff; }
+    #territoryMode { top: 100px; border: 1px solid #f0f; color: #f0f; text-shadow: 0 0 10px #f0f; }
+    #fps { position: absolute; top: 10px; right: 10px; color: #0f0; background: rgba(0,0,0,0.7); padding: 4px 10px; border-radius: 5px; font-size: 12px; font-family: monospace; }
+    #peopleCount { position: absolute; top: 140px; right: 20px; color: #ff0; background: rgba(0,0,0,0.8); padding: 6px 15px; border-radius: 15px; font-size: 14px; border: 1px solid #ff0; }
+    #speedIndicator { position: absolute; bottom: 80px; right: 20px; color: #fff; background: rgba(0,0,0,0.7); padding: 4px 12px; border-radius: 10px; font-size: 12px; }
+    .instruction { position: absolute; bottom: 20px; left: 20px; color: #aaa; background: rgba(0,0,0,0.7); padding: 6px 15px; border-radius: 15px; font-size: 11px; }
+    
+    #chatContainer {
+      position: absolute;
+      bottom: 20px; left: 50%;
+      transform: translateX(-50%);
+      width: 420px; max-height: 320px;
+      background: rgba(0,0,0,0.92);
+      border: 2px solid #ff5500;
+      border-radius: 10px;
+      display: none;
+      flex-direction: column;
+      z-index: 200;
+    }
+    #chatMessages { flex: 1; overflow-y: auto; padding: 10px; max-height: 260px; color: white; font-size: 13px; }
+    #chatInputContainer { display: flex; border-top: 1px solid #ff5500; }
+    #chatInput { flex: 1; padding: 8px; background: rgba(255,255,255,0.1); border: none; color: white; outline: none; }
+    #chatSendBtn { padding: 8px 15px; background: #ff5500; border: none; color: white; cursor: pointer; }
+    .chat-message { margin-bottom: 5px; }
+    .chat-message.player .name { color: #0f0; font-weight: bold; }
+    .chat-message.npc .name { color: #ffaa00; font-weight: bold; }
+    .chat-message.system .name { color: #ff5555; font-weight: bold; }
+    #chatHint { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: #ff5500; background: rgba(0,0,0,0.7); padding: 4px 12px; border-radius: 10px; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div id="disclaimer">
+    <div id="disclaimerBox">
+      <h2>⚠️ ВНИМАНИЕ!</h2>
+      <p>Эта игра содержит сцены насилия, взрывов и разрушений. Все персонажи вымышлены, любые совпадения случайны.</p>
+      <p>Игра предназначена для лиц старше 16 лет. Если вы чувствуете дискомфорт — немедленно прекратите игру.</p>
+      <p>Нажимая "Принять", вы подтверждаете, что вам есть 16 лет и вы принимаете условия.</p>
+      <button class="menuBtn" id="acceptBtn">ПРИНЯТЬ</button>
+    </div>
+  </div>
+  
+  <div id="mainMenu">
+    <h1>💥 БАЗУКА 3D</h1>
+    <p class="subtitle">Разрушай город, спавни людей, вызывай метеориты!</p>
+    <button class="menuBtn" id="playBtn">🎮 ИГРАТЬ</button>
+    <button class="menuBtn" id="continueBtn" disabled>▶️ ПРОДОЛЖИТЬ</button>
+  </div>
+  
+  <button id="menuToggleBtn">⋮ МЕНЮ</button>
+  
+  <div id="pauseMenu">
+    <h2>⏸️ ПАУЗА</h2>
+    <button class="menuBtn" id="saveGameBtn">💾 СОХРАНИТЬ ПРОГРЕСС</button>
+    <button class="menuBtn" id="resumeGameBtn">▶️ ПРОДОЛЖИТЬ ИГРУ</button>
+    <button class="menuBtn" id="exitMenuBtn">🚪 ВЫЙТИ В МЕНЮ</button>
+  </div>
+  
+  <div id="saveMsg">💾 ИГРА СОХРАНЕНА!</div>
+  
+  <div id="info"><b>💥 БАЗУКА</b><br><small>WASD | Мышь | ЛКМ | R</small></div>
+  <div id="crosshair"><div class="cross-h"></div><div class="cross-v"></div><div class="cross-dot"></div></div>
+  <div id="ammo">🚀 <span id="rocketCount">5</span>/5</div>
+  <div id="godMode" style="display:none;">👑 РЕЖИМ БОГА</div>
+  <div id="territoryMode" style="display:none;">⭐ РАСШИРЕНИЕ ТЕРРИТОРИИ</div>
+  <div id="peopleCount" style="display:none;">👥 Людей: <span id="peopleValue">0</span></div>
+  <div id="fps">FPS: <span id="fpsValue">0</span></div>
+  <div id="speedIndicator" style="display:none;">⚡ Скорость: <span id="speedValue">1x</span></div>
+  <div id="chatHint">💬 P — открыть чат</div>
+  
+  <div id="chatContainer">
+    <div id="chatMessages"><div class="chat-message system"><span class="name">[СИСТЕМА]</span> <span class="text">Чат открыт! NPC отвечают на сообщения.</span></div></div>
+    <div id="chatInputContainer"><input type="text" id="chatInput" placeholder="Напишите сообщение..." maxlength="150"><button id="chatSendBtn">Отпр.</button></div>
+  </div>
+  
+  <div class="instruction">🏃 WASD | 🔫 ЛКМ | 👑 G | ⭐ H | ☄️ E | 👥 F | 🏗️ T | 💬 P</div>
+
+  <script type="importmap">
+    { "imports": { "three": "https://unpkg.com/three@0.128.0/build/three.module.js" } }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    
+    // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
+    let gameActive = false;
+    let savedGameData = null;
+    let godMode = false, territoryMode = false;
+    let ammo = 5;
+    const maxAmmo = 5;
+    let yaw = 0, pitch = 0;
+    
+    // ========== СИСТЕМА СОХРАНЕНИЯ ==========
+    function checkSaveFile() {
+      const saved = localStorage.getItem('bazuka3d_save');
+      const continueBtn = document.getElementById('continueBtn');
+      if (saved) {
+        try {
+          savedGameData = JSON.parse(saved);
+          continueBtn.disabled = false;
+          console.log('✅ Найдено сохранение от:', savedGameData.timestamp);
+        } catch(e) {
+          console.error('Ошибка чтения сохранения:', e);
+          localStorage.removeItem('bazuka3d_save');
+          savedGameData = null;
+          continueBtn.disabled = true;
+        }
+      } else {
+        savedGameData = null;
+        continueBtn.disabled = true;
+      }
+    }
+    
+    function saveGame() {
+      try {
+        const saveData = {
+          ammo: ammo,
+          godMode: godMode,
+          territoryMode: territoryMode,
+          playerPos: { 
+            x: camera.position.x, 
+            y: camera.position.y, 
+            z: camera.position.z 
+          },
+          playerRot: { yaw: yaw, pitch: pitch },
+          buildings: buildings.map(b => ({ 
+            destroyed: b.destroyed, 
+            x: b.x, 
+            z: b.z 
+          })),
+          peopleCount: people.filter(p => p.alive).length,
+          timestamp: new Date().toISOString()
+        };
+        
+        localStorage.setItem('bazuka3d_save', JSON.stringify(saveData));
+        savedGameData = saveData;
+        document.getElementById('continueBtn').disabled = false;
+        
+        // Показываем сообщение
+        const msg = document.getElementById('saveMsg');
+        msg.style.opacity = '1';
+        setTimeout(() => { msg.style.opacity = '0'; }, 2000);
+        
+        console.log('💾 Игра сохранена!', saveData);
+      } catch(e) {
+        console.error('❌ Ошибка сохранения:', e);
+        alert('Не удалось сохранить игру! Возможно, переполнено хранилище.');
+      }
+    }
+    
+    function loadSaveData() {
+      if (!savedGameData) return false;
+      
+      try {
+        ammo = savedGameData.ammo || maxAmmo;
+        godMode = savedGameData.godMode || false;
+        territoryMode = savedGameData.territoryMode || false;
+        
+        // Восстанавливаем позицию
+        if (savedGameData.playerPos) {
+          camera.position.set(
+            savedGameData.playerPos.x,
+            savedGameData.playerPos.y,
+            savedGameData.playerPos.z
+          );
+        }
+        
+        // Восстанавливаем поворот
+        if (savedGameData.playerRot) {
+          yaw = savedGameData.playerRot.yaw || 0;
+          pitch = savedGameData.playerRot.pitch || 0;
+          camera.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
+        }
+        
+        // Восстанавливаем здания
+        if (savedGameData.buildings) {
+          savedGameData.buildings.forEach((sb, i) => {
+            if (i < buildings.length) {
+              buildings[i].destroyed = sb.destroyed;
+              if (sb.destroyed) {
+                buildings[i].mesh.material.color.setHex(0x444444);
+                buildings[i].mesh.position.y = buildings[i].originalY - 0.4;
+                buildings[i].mesh.scale.set(0.85, 0.7, 0.85);
+              } else {
+                buildings[i].mesh.material.color.setHex(buildings[i].color);
+                buildings[i].mesh.position.y = buildings[i].originalY;
+                buildings[i].mesh.scale.set(1, 1, 1);
+              }
+            }
+          });
+        }
+        
+        // Восстанавливаем пентаграмму
+        if (territoryMode) {
+          createPentagram();
+        } else {
+          removePentagram();
+        }
+        
+        updateUI();
+        console.log('✅ Сохранение загружено!');
+        return true;
+      } catch(e) {
+        console.error('❌ Ошибка загрузки:', e);
+        return false;
+      }
+    }
+
+    // ========== ИНИЦИАЛИЗАЦИЯ ==========
+    const MAP_SIZE = 100, HALF_MAP = MAP_SIZE / 2;
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1a1a2e);
+    scene.fog = new THREE.Fog(0x1a1a2e, HALF_MAP*0.7, HALF_MAP*1.2);
+    
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.5, MAP_SIZE*2);
+    camera.position.set(5, 1.7, 12);
+    
+    const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "low-power", precision: "lowp" });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = false;
+    renderer.setPixelRatio(1);
+    document.body.appendChild(renderer.domElement);
+    
+    scene.add(new THREE.AmbientLight(0x666666));
+    const dl = new THREE.DirectionalLight(0xffffff, 0.8);
+    dl.position.set(HALF_MAP*0.3, HALF_MAP*0.4, HALF_MAP*0.2);
+    scene.add(dl);
+
+    let pentagram = null, pentagramRotation = 0;
+    const gravity = -12;
+    const rockets = [], meteors = [];
+    
+    function updateUI() {
+      document.getElementById('rocketCount').textContent = (godMode||territoryMode)?'∞':ammo;
+      document.getElementById('godMode').style.display = godMode?'block':'none';
+      document.getElementById('territoryMode').style.display = territoryMode?'block':'none';
+      document.getElementById('peopleCount').style.display = (godMode||territoryMode)?'block':'none';
+      document.getElementById('peopleValue').textContent = people.filter(p=>p.alive).length;
+      document.getElementById('speedIndicator').style.display = (godMode||territoryMode)?'block':'none';
+      if(territoryMode){document.getElementById('speedValue').textContent='6x';document.getElementById('speedValue').style.color='#f0f';}
+      else if(godMode){document.getElementById('speedValue').textContent='2x';document.getElementById('speedValue').style.color='#0ff';}
+      else{document.getElementById('speedValue').textContent='1x';document.getElementById('speedValue').style.color='#fff';}
+    }
+
+    function createPentagram() {
+      if(pentagram)scene.remove(pentagram);
+      pentagram = new THREE.Group();
+      const or=3,ir=1.2,pts=[];
+      for(let i=0;i<5;i++){const oa=(i*72-90)*Math.PI/180,ia=((i*72+36)-90)*Math.PI/180;pts.push(new THREE.Vector3(Math.cos(oa)*or,0,Math.sin(oa)*or));pts.push(new THREE.Vector3(Math.cos(ia)*ir,0,Math.sin(ia)*ir));}
+      for(let i=0;i<pts.length;i++){const n=(i+2)%pts.length,mid=new THREE.Vector3().addVectors(pts[i],pts[n]).multiplyScalar(0.5),d=new THREE.Vector3().subVectors(pts[n],pts[i]),l=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,d.length(),4),new THREE.MeshBasicMaterial({color:0xff00ff}));l.position.copy(mid);l.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize());pentagram.add(l);}
+      pentagram.position.y=0.05;scene.add(pentagram);
+    }
+    function removePentagram(){if(pentagram){scene.remove(pentagram);pentagram=null;}}
+    
+    function toggleTerritoryMode(){territoryMode=!territoryMode;if(territoryMode){godMode=false;createPentagram();camera.position.y=1.7;}else removePentagram();updateUI();}
+    function toggleGodMode(){godMode=!godMode;if(godMode){territoryMode=false;removePentagram();}else{if(!territoryMode){camera.position.y=1.7;ammo=Math.min(ammo,maxAmmo);}}updateUI();}
+
+    const buildings=[],buildingData=[];
+    function createBuilding(x,z,w,d,h,color,save=true){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d,3,3,3),new THREE.MeshLambertMaterial({color}));m.position.set(x,h/2,z);scene.add(m);buildings.push({mesh:m,x,z,w,d,h,color,destroyed:false,originalY:h/2});if(save)buildingData.push({x,z,w,d,h,color});}
+    const colors=[0x5a7d9c,0x4a6c8f,0x3a5a7a,0x6b8cae,0x2c4a6e,0x7e9bc2,0x4f6d8c,0x3d5a7d];
+    for(let i=0;i<80;i++){const a=Math.random()*Math.PI*2,r=3+Math.random()*20,x=Math.cos(a)*r,z=Math.sin(a)*r;if(Math.sqrt((x-5)**2+(z-12)**2)<2.5)continue;createBuilding(x,z,1.5+Math.random()*3,1.5+Math.random()*3,3+Math.random()*8,colors[Math.floor(Math.random()*colors.length)]);}
+    for(let i=0;i<120;i++){const a=Math.random()*Math.PI*2,r=20+Math.random()*28;createBuilding(Math.cos(a)*r,Math.sin(a)*r,1+Math.random()*2,1+Math.random()*2,1.5+Math.random()*4,colors[Math.floor(Math.random()*colors.length)]);}
+    for(let i=0;i<60;i++){const a=Math.random()*Math.PI*2,r=40+Math.random()*10;createBuilding(Math.cos(a)*r,Math.sin(a)*r,1+Math.random()*1.5,1+Math.random()*1.5,1+Math.random()*3,colors[Math.floor(Math.random()*colors.length)]);}
+    scene.add(new THREE.Mesh(new THREE.PlaneGeometry(MAP_SIZE,MAP_SIZE),new THREE.MeshLambertMaterial({color:0x333344})).rotateX(-Math.PI/2).translateY(-0.01));
+    
+    const crates=[];
+    for(let i=0;i<50;i++){const a=Math.random()*Math.PI*2,r=3+Math.random()*45,s=0.5,m=new THREE.Mesh(new THREE.BoxGeometry(s,s,s),new THREE.MeshLambertMaterial({color:0x8b5a2b}));m.position.set(Math.cos(a)*r,s/2,Math.sin(a)*r);scene.add(m);crates.push({mesh:m,vel:new THREE.Vector3(),size:s});}
+
+    const people=[];
+    function createPerson(x,z){const g=new THREE.Group();g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.25,1.2,4),new THREE.MeshLambertMaterial({color:0x3355aa})).translateY(0.6));g.add(new THREE.Mesh(new THREE.SphereGeometry(0.2,4,4),new THREE.MeshLambertMaterial({color:0xffccaa})).translateY(1.3));g.position.set(x,0,z);scene.add(g);people.push({group:g,alive:true,health:100,moveTimer:Math.random()*3,vel:new THREE.Vector3()});}
+    for(let i=0;i<30;i++){const a=Math.random()*Math.PI*2,r=3+Math.random()*45;createPerson(Math.cos(a)*r,Math.sin(a)*r);}
+    
+    function spawnPeople(n=1){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,d=2+Math.random()*5;createPerson(camera.position.x+Math.cos(a)*d,camera.position.z+Math.sin(a)*d);}updateUI();}
+    
+    function restoreAll(){
+      buildings.forEach(b=>scene.remove(b.mesh));buildings.length=0;
+      buildingData.forEach(d=>createBuilding(d.x,d.z,d.w,d.d,d.h,d.color,false));
+      crates.forEach(c=>scene.remove(c.mesh));crates.length=0;
+      for(let i=0;i<50;i++){const a=Math.random()*Math.PI*2,r=3+Math.random()*45,s=0.5,m=new THREE.Mesh(new THREE.BoxGeometry(s,s,s),new THREE.MeshLambertMaterial({color:0x8b5a2b}));m.position.set(Math.cos(a)*r,s/2,Math.sin(a)*r);scene.add(m);crates.push({mesh:m,vel:new THREE.Vector3(),size:s});}
+      people.forEach(p=>{if(p.group)scene.remove(p.group);});people.length=0;
+      for(let i=0;i<30;i++){const a=Math.random()*Math.PI*2,r=3+Math.random()*45;createPerson(Math.cos(a)*r,Math.sin(a)*r);}
+      updateUI();
+    }
+
+    const weaponGroup = new THREE.Group().translateX(0.35).translateY(-0.25).translateZ(-0.6);
+    camera.add(weaponGroup);scene.add(camera);
+    weaponGroup.add(new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.18,1,6),new THREE.MeshLambertMaterial({color:0x555555})).rotateX(Math.PI/2).translateZ(0.3));
+
+    function createExplosion(pos,radius=4){
+      const ar=territoryMode?radius*1.5:(godMode?radius*1.3:radius);
+      const cnt=territoryMode?10:(godMode?8:5);
+      const col=territoryMode?0xff00ff:(godMode?0x00ffff:0xff4400);
+      for(let i=0;i<cnt;i++){const p=new THREE.Mesh(new THREE.SphereGeometry(0.06,2,2),new THREE.MeshBasicMaterial({color:col}));p.position.copy(pos);p.userData={vel:new THREE.Vector3((Math.random()-0.5)*3,Math.random()*3+1,(Math.random()-0.5)*3),life:0.4};scene.add(p);const st=performance.now();(function anim(){const e=(performance.now()-st)/1000;if(e>p.userData.life){scene.remove(p);return;}p.position.x+=p.userData.vel.x*0.1;p.position.y+=p.userData.vel.y*0.1;p.position.z+=p.userData.vel.z*0.1;p.userData.vel.y-=0.25;p.scale.setScalar(1-e/p.userData.life);requestAnimationFrame(anim);})();}
+      people.forEach(p=>{if(p.alive&&p.group.position.distanceTo(pos)<ar){p.health-=100;if(p.health<=0){p.alive=false;p.group.visible=false;}}});
+      buildings.forEach(b=>{if(!b.destroyed&&Math.sqrt((b.x-pos.x)**2+(b.z-pos.z)**2)<ar*0.9){b.destroyed=true;b.mesh.material.color.setHex(0x444444);b.mesh.position.y-=0.4;b.mesh.scale.set(0.85,0.7,0.85);}});
+      crates.forEach(c=>{const d=c.mesh.position.distanceTo(pos);if(d<ar+1.5){const dir=c.mesh.position.clone().sub(pos).normalize();c.vel.copy(dir.multiplyScalar(10));c.vel.y=5;}});
+      updateUI();
+    }
+
+    function shoot(){
+      if(!godMode&&!territoryMode&&ammo<=0)return;
+      if(!godMode&&!territoryMode)ammo--;
+      updateUI();
+      const dir=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
+      const pos=new THREE.Vector3(0,0,0.9);weaponGroup.localToWorld(pos);
+      const mesh=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,0.4,4),new THREE.MeshBasicMaterial({color:territoryMode?0xff00ff:(godMode?0x00ffff:0xff6600)}));
+      mesh.position.copy(pos);scene.add(mesh);
+      rockets.push({mesh,pos:pos.clone(),vel:dir.multiplyScalar(territoryMode?55:(godMode?40:30)),time:performance.now(),isSpecial:godMode||territoryMode,isTerritory:territoryMode});
+    }
+
+    function spawnMeteor(){
+      const target=new THREE.Vector3(0,0,-25).applyQuaternion(camera.quaternion).add(camera.position);target.y=0;
+      const start=new THREE.Vector3(target.x+(Math.random()-0.5)*12,50+Math.random()*15,target.z+(Math.random()-0.5)*12);
+      const mesh=new THREE.Mesh(new THREE.SphereGeometry(territoryMode?1.0:(godMode?0.7:0.6),4,4),new THREE.MeshBasicMaterial({color:territoryMode?0xff00ff:(godMode?0x00ffff:0xff4400)}));
+      mesh.position.copy(start);scene.add(mesh);
+      meteors.push({mesh,pos:start.clone(),target:target.clone(),vel:new THREE.Vector3(0,-20,0),time:performance.now(),explosionRadius:territoryMode?6:(godMode?5:7),speed:territoryMode?40:(godMode?30:25)});
+    }
+
+    // Чат
+    const chatContainer=document.getElementById('chatContainer'),chatMessages=document.getElementById('chatMessages'),chatInput=document.getElementById('chatInput'),chatSendBtn=document.getElementById('chatSendBtn');
+    let chatOpen=false;
+    const npcNames=["Алексей","Мария","Дмитрий","Елена","Сергей","Анна","Игорь","Ольга","Виктор","Наталья","Михаил","Татьяна","Роман","Юлия","Артём","Ксения"];
+    const npcResponses={'привет':["Привет!","Здравствуй!","О, привет!","Привет-привет!","Здарова!"],'как дела':["Нормально!","Хорошо!","Страшновато...","Лучше всех!","Выживаю!"],'помоги':["Держись!","Беги ко мне!","Помощь близко!","Я рядом!","Не бойся!"],'базука':["Круто!","Осторожнее!","Мощно!","Не в меня!","Серьёзно!"],'взрыв':["Опять?!","Где?!","Громко!","Ужас!","Беги!"],'город':["Разрушен...","Мой дом!","Руины...","Парк был тут...","Хаос!"],'метеорит':["С неба!","Огонь!","Конец света!","Откуда?!","Ужас!"],'бог':["Ты бог?","Читер!","Летаешь!","Супергерой!","Я тоже хочу!"],'пентаграмма':["Магия!","Демоны!","Ритуал!","Духи!","Колдовство!"],'страшно':["Мне тоже!","Не бойся!","Привык уже...","Держись!","Нормально."],'пока':["Пока!","До встречи!","Удачи!","Прощай!","Счастливо!"],'спасибо':["Не за что!","Пожалуйста!","Рад помочь!","На здоровье!","Всегда!"]};
+    const defaultResponses=["Не понимаю...","Что?","Интересно...","Хм...","Повтори!","Я отвлёкся!","Расскажи ещё!","Думаю..."];
+    
+    function addChatMessage(name,text,type='npc'){const d=document.createElement('div');d.className='chat-message '+type;d.innerHTML='<span class="name">['+name+']</span> <span class="text">'+text+'</span>';chatMessages.appendChild(d);chatMessages.scrollTop=chatMessages.scrollHeight;while(chatMessages.children.length>50)chatMessages.removeChild(chatMessages.firstChild);}
+    function sendPlayerMessage(){const text=chatInput.value.trim();if(text){addChatMessage("Вы",text,'player');chatInput.value='';setTimeout(()=>{const ap=people.filter(p=>p.alive);if(ap.length>0){const name=npcNames[Math.floor(Math.random()*npcNames.length)];let resp=defaultResponses[Math.floor(Math.random()*defaultResponses.length)];for(const[k,r]of Object.entries(npcResponses)){if(text.toLowerCase().includes(k)){resp=r[Math.floor(Math.random()*r.length)];break;}}addChatMessage(name,resp,'npc');if(Math.random()>0.5&&ap.length>1)setTimeout(()=>{const n2=npcNames[Math.floor(Math.random()*npcNames.length)];let r2=defaultResponses[Math.floor(Math.random()*defaultResponses.length)];for(const[k,r]of Object.entries(npcResponses)){if(text.toLowerCase().includes(k)){r2=r[Math.floor(Math.random()*r.length)];break;}}addChatMessage(n2,r2,'npc');},800+Math.random()*1500);}else addChatMessage("СИСТЕМА","Нет живых NPC...",'system');},500+Math.random()*1000);}}
+    function openChat(){chatOpen=true;chatContainer.style.display='flex';document.getElementById('chatHint').style.display='none';chatInput.focus();document.exitPointerLock();}
+    function closeChat(){chatOpen=false;chatContainer.style.display='none';document.getElementById('chatHint').style.display='block';chatInput.value='';}
+    chatSendBtn.addEventListener('click',sendPlayerMessage);
+    chatInput.addEventListener('keydown',e=>{if(e.key==='Enter')sendPlayerMessage();if(e.key==='Escape')closeChat();});
+    
+    let npcChatTimer=0;
+    function npcRandomChat(dt){npcChatTimer-=dt;if(npcChatTimer<=0){npcChatTimer=8+Math.random()*15;const ap=people.filter(p=>p.alive);if(ap.length>0){const phrases=["Кто-нибудь меня слышит?","Тут происходит что-то невероятное!","Я просто хочу домой...","Смотрите под ноги!","Этот хаос никогда не закончится!"];addChatMessage(npcNames[Math.floor(Math.random()*npcNames.length)],phrases[Math.floor(Math.random()*phrases.length)],'npc');}}}
+
+    // Управление
+    const keys={};
+    window.addEventListener('keydown',e=>{
+      if(chatOpen){if(e.code==='KeyP'||e.code==='Escape')closeChat();return;}
+      keys[e.code]=true;
+      if(e.code==='KeyR'&&!godMode&&!territoryMode){ammo=maxAmmo;updateUI();}
+      if(e.code==='KeyG')toggleGodMode();
+      if(e.code==='KeyH')toggleTerritoryMode();
+      if(e.code==='KeyE')spawnMeteor();
+      if(e.code==='KeyF'&&(godMode||territoryMode))spawnPeople(territoryMode?3:1);
+      if(e.code==='KeyT')restoreAll();
+      if(e.code==='KeyP')openChat();
+      if(e.code==='Escape'){if(!chatOpen&&gameActive)document.exitPointerLock();}
+    });
+    window.addEventListener('keyup',e=>{keys[e.code]=false;});
+    
+    renderer.domElement.addEventListener('click',()=>{if(!chatOpen&&gameActive&&document.getElementById('pauseMenu').style.display==='none')renderer.domElement.requestPointerLock();});
+    document.addEventListener('mousemove',e=>{if(document.pointerLockElement===renderer.domElement){yaw-=e.movementX*0.002;pitch-=e.movementY*0.002;pitch=Math.max(-1.5,Math.min(1.5,pitch));camera.quaternion.setFromEuler(new THREE.Euler(pitch,yaw,0,'YXZ'));}});
+    renderer.domElement.addEventListener('mousedown',e=>{if(e.button===0&&document.pointerLockElement===renderer.domElement)shoot();});
+
+    // ========== КНОПКИ МЕНЮ ==========
+    document.getElementById('acceptBtn').addEventListener('click', () => {
+      document.getElementById('disclaimer').style.display = 'none';
+      document.getElementById('mainMenu').style.display = 'flex';
+      checkSaveFile();
+    });
+    
+    document.getElementById('playBtn').addEventListener('click', () => {
+      localStorage.removeItem('bazuka3d_save');
+      savedGameData = null;
+      document.getElementById('continueBtn').disabled = true;
+      document.getElementById('mainMenu').style.display = 'none';
+      document.getElementById('menuToggleBtn').style.display = 'block';
+      gameActive = true;
+      restoreAll();
+      ammo = maxAmmo;
+      godMode = false;
+      territoryMode = false;
+      removePentagram();
+      camera.position.set(5, 1.7, 12);
+      yaw = 0; pitch = 0;
+      camera.quaternion.setFromEuler(new THREE.Euler(0, 0, 0, 'YXZ'));
+      updateUI();
+      setTimeout(() => renderer.domElement.requestPointerLock(), 100);
+    });
+    
+    document.getElementById('continueBtn').addEventListener('click', () => {
+      if (!savedGameData) {
+        alert('Нет сохранения!');
+        return;
+      }
+      document.getElementById('mainMenu').style.display = 'none';
+      document.getElementById('menuToggleBtn').style.display = 'block';
+      gameActive = true;
+      if (loadSaveData()) {
+        setTimeout(() => renderer.domElement.requestPointerLock(), 100);
+      } else {
+        alert('Ошибка загрузки сохранения!');
+        gameActive = false;
+        document.getElementById('mainMenu').style.display = 'flex';
+      }
+    });
+    
+    document.getElementById('menuToggleBtn').addEventListener('click', () => {
+      document.getElementById('pauseMenu').style.display = 'flex';
+      document.exitPointerLock();
+    });
+    
+    document.getElementById('saveGameBtn').addEventListener('click', () => {
+      saveGame();
+    });
+    
+    document.getElementById('resumeGameBtn').addEventListener('click', () => {
+      document.getElementById('pauseMenu').style.display = 'none';
+      if (gameActive) setTimeout(() => renderer.domElement.requestPointerLock(), 100);
+    });
+    
+    document.getElementById('exitMenuBtn').addEventListener('click', () => {
+      document.getElementById('pauseMenu').style.display = 'none';
+      document.getElementById('menuToggleBtn').style.display = 'none';
+      gameActive = false;
+      document.getElementById('mainMenu').style.display = 'flex';
+      checkSaveFile();
+      closeChat();
+    });
+
+    // Игровой цикл
+    let lt=performance.now(),fc=0,ft=0;
+    function animate(){
+      const now=performance.now(),dt=Math.min((now-lt)/1000,0.1);lt=now;
+      fc++;ft+=dt;
+      if(ft>=0.5){document.getElementById('fpsValue').textContent=Math.round(fc/ft);fc=0;ft=0;}
+      
+      if(gameActive) npcRandomChat(dt);
+      
+      if(territoryMode&&pentagram){pentagramRotation+=dt*2;pentagram.position.x=camera.position.x;pentagram.position.z=camera.position.z;pentagram.rotation.y=pentagramRotation;pentagram.scale.setScalar(1+Math.sin(now*0.005)*0.1);}
+      
+      if(document.pointerLockElement===renderer.domElement&&!chatOpen&&gameActive&&document.getElementById('pauseMenu').style.display==='none'){
+        const move=new THREE.Vector3();
+        if(keys.KeyW)move.z-=1;if(keys.KeyS)move.z+=1;if(keys.KeyA)move.x-=1;if(keys.KeyD)move.x+=1;
+        if(godMode){if(keys.Space)move.y+=1;if(keys.ShiftLeft||keys.ShiftRight)move.y-=1;}
+        if(move.length()>0){move.normalize();const fwd=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);if(!godMode)fwd.y=0;fwd.normalize();const right=new THREE.Vector3(1,0,0).applyQuaternion(camera.quaternion);if(!godMode)right.y=0;right.normalize();const sp=territoryMode?48:(godMode?20:8);camera.position.addScaledVector(fwd,-move.z*sp*dt);camera.position.addScaledVector(right,move.x*sp*dt);if(godMode)camera.position.y+=move.y*sp*dt;}
+        if(!godMode)camera.position.y=1.7;
+        camera.position.x=Math.max(-HALF_MAP+1,Math.min(HALF_MAP-1,camera.position.x));
+        camera.position.z=Math.max(-HALF_MAP+1,Math.min(HALF_MAP-1,camera.position.z));
+        if(godMode&&camera.position.y<0.5)camera.position.y=0.5;
+        if(godMode&&camera.position.y>80)camera.position.y=80;
+      }
+      
+      for(let i=rockets.length-1;i>=0;i--){const r=rockets[i];r.pos.addScaledVector(r.vel,dt);r.mesh.position.copy(r.pos);if(r.pos.y<0.1||performance.now()-r.time>(r.isTerritory?10000:(r.isSpecial?8000:5000))||Math.abs(r.pos.x)>HALF_MAP||Math.abs(r.pos.z)>HALF_MAP){createExplosion(r.pos,r.isTerritory?6:(r.isSpecial?5:4));scene.remove(r.mesh);rockets.splice(i,1);continue;}for(const b of buildings){if(b.destroyed)continue;const hr=r.isTerritory?0.5:(r.isSpecial?0.4:0.3);if(Math.abs(r.pos.x-b.x)<b.w/2+hr&&Math.abs(r.pos.z-b.z)<b.d/2+hr&&r.pos.y<b.h){createExplosion(r.pos,r.isTerritory?6:(r.isSpecial?5:4));scene.remove(r.mesh);rockets.splice(i,1);break;}}}
+      
+      for(let i=meteors.length-1;i>=0;i--){const m=meteors[i];m.vel.lerp(m.target.clone().sub(m.pos).normalize().multiplyScalar(m.speed),0.05);m.pos.addScaledVector(m.vel,dt);m.mesh.position.copy(m.pos);m.mesh.rotation.x+=dt*5;m.mesh.rotation.z+=dt*3;if(m.pos.y<0.5){createExplosion(new THREE.Vector3(m.pos.x,0.5,m.pos.z),m.explosionRadius);scene.remove(m.mesh);meteors.splice(i,1);continue;}let hit=false;for(const b of buildings){if(b.destroyed)continue;if(Math.abs(m.pos.x-b.x)<b.w/2+0.7&&Math.abs(m.pos.z-b.z)<b.d/2+0.7&&m.pos.y<b.h){createExplosion(new THREE.Vector3(m.pos.x,m.pos.y,m.pos.z),m.explosionRadius);scene.remove(m.mesh);meteors.splice(i,1);hit=true;break;}}if(hit)continue;if(performance.now()-m.time>10000||Math.abs(m.pos.x)>HALF_MAP||Math.abs(m.pos.z)>HALF_MAP){scene.remove(m.mesh);meteors.splice(i,1);}}
+      
+      crates.forEach(c=>{c.vel.y+=gravity*dt;c.mesh.position.x+=c.vel.x*dt;c.mesh.position.y+=c.vel.y*dt;c.mesh.position.z+=c.vel.z*dt;if(c.mesh.position.y<0.25){c.mesh.position.y=0.25;c.vel.y=0;c.vel.x*=0.8;c.vel.z*=0.8;}});
+      people.forEach(p=>{if(!p.alive)return;p.moveTimer-=dt;if(p.moveTimer<=0){p.moveTimer=2+Math.random()*3;p.vel.x=(Math.random()-0.5)*2;p.vel.z=(Math.random()-0.5)*2;}p.group.position.x+=p.vel.x*dt;p.group.position.z+=p.vel.z*dt;});
+      
+      renderer.render(scene,camera);
+      requestAnimationFrame(animate);
+    }
+    
+    updateUI();
+    animate();
+    
+    window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);});
+    
+    console.log('🎮 Игра готова!');
+    console.log('💾 Сохранение: откройте меню (⋮) → "Сохранить прогресс"');
+    console.log('📂 Загрузка: главное меню → "Продолжить"');
+  </script>
+</body>
+</html>
